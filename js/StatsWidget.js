@@ -9,7 +9,7 @@ import {
 
 export default class StatsWidget extends UIComponent {
   constructor(config) {
-    super({ title: 'Университет сегодня', span: 4, height: 300, ...config });
+    super({ title: 'Университет сегодня', span: 4, height: 390, ...config });
     this.type = 'stats';
     this.stats = config.state?.stats || null;
     this.selection = config.state?.selection || { type: 'group', id: 2, label: '1-ГД-13' };

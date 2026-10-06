@@ -9,7 +9,7 @@ import MonthLoadWidget from './MonthLoadWidget.js';
 const types = { selector: GroupSelectorWidget, stats: StatsWidget, map: CampusMapWidget, today: TodayScheduleWidget, rooms: RoomsWidget, statham: StathamQuoteWidget, monthLoad: MonthLoadWidget };
 const defaultLayout = [
   { id: 'selector-main', type: 'selector', span: 12, height: 250 },
-  { id: 'stats-main', type: 'stats', span: 4, height: 300 },
+  { id: 'stats-main', type: 'stats', span: 4, height: 390 },
   { id: 'map-main', type: 'map', span: 8, height: 360 },
   { id: 'today-main', type: 'today', span: 8, height: 430 },
   { id: 'rooms-main', type: 'rooms', span: 4, height: 430 },
@@ -33,7 +33,14 @@ export default class Dashboard {
     let saved;
     try { saved = JSON.parse(localStorage.getItem('sutd-dashboard-layout-v6')); } catch { saved = null; }
     const layout = Array.isArray(saved) && saved.length ? saved : defaultLayout;
-    layout.forEach((config) => this.addWidget(config.type, config, false));
+    const upgradeStats = localStorage.getItem('sutd-stats-expanded-v1') !== '1';
+    layout.forEach((config) => {
+      const migrated = upgradeStats && config.type === 'stats'
+        ? { ...config, height: Math.max(390, config.height || 0) }
+        : config;
+      this.addWidget(migrated.type, migrated, false);
+    });
+    if (upgradeStats) localStorage.setItem('sutd-stats-expanded-v1', '1');
     this.bindInteractions();
     this.updateCount();
   }
