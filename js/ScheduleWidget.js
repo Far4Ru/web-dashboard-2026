@@ -19,7 +19,7 @@ export default class ScheduleWidget extends UIComponent {
   }
 
   render() {
-    const { article, body } = this.createShell('/assets/icons/lecture.svg', 'university-blue', `Группа ${this.groupLabel}`);
+    const { article, body } = this.createShell('assets/icons/lecture.svg', 'university-blue', `Группа ${this.groupLabel}`);
     article.classList.add('schedule-widget');
     body.innerHTML = '<div class="api-state schedule-content" role="status"></div><div class="schedule-source">Данные: официальное расписание СПбГУПТД</div>';
     this.content = body.querySelector('.schedule-content');

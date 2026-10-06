@@ -8,7 +8,7 @@ export default class RoomsWidget extends UIComponent {
   }
 
   render() {
-    const { article, body } = this.createShell('/assets/icons/classroom.svg', 'amber', this.subtitle());
+    const { article, body } = this.createShell('assets/icons/classroom.svg', 'amber', this.subtitle());
     body.innerHTML = '<label class="widget-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Найти аудиторию" aria-label="Поиск аудитории"></label><div class="day-switcher" aria-label="День недели"></div><div class="api-state rooms-content" role="status"></div>';
     this.content = body.querySelector('.rooms-content');
     this.daySwitcher = body.querySelector('.day-switcher');

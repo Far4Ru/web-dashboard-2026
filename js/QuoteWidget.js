@@ -8,7 +8,7 @@ export default class QuoteWidget extends UIComponent {
   }
 
   render() {
-    const { article, body } = this.createShell('/assets/icons/quote.svg', 'violet', 'Немного вдохновения');
+    const { article, body } = this.createShell('assets/icons/quote.svg', 'violet', 'Немного вдохновения');
     body.innerHTML = '<div class="api-state quote-content" role="status"></div><button class="refresh-button" type="button"><span>↻</span> Новая цитата</button>';
     this.content = body.querySelector('.quote-content');
     this.listen(body.querySelector('.refresh-button'), 'click', () => this.loadQuote());

@@ -9,7 +9,7 @@ export default class StathamQuoteWidget extends UIComponent {
   }
 
   render() {
-    const { article, body } = this.createShell('/assets/icons/quote.svg', 'violet', 'Нажмите, чтобы сменить цитату');
+    const { article, body } = this.createShell('assets/icons/quote.svg', 'violet', 'Нажмите, чтобы сменить цитату');
     article.classList.add('statham-widget');
     body.innerHTML = '<button class="statham-quote api-state is-loading" type="button" aria-label="Показать следующую цитату">Загружаем цитаты…</button><a class="quote-source" href="https://citaty.info/selection/citaty-stethema" target="_blank" rel="noreferrer">Источник: citaty.info ↗</a>';
     this.content = body.querySelector('.statham-quote');

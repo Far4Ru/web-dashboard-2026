@@ -9,7 +9,7 @@ export default class TodayScheduleWidget extends UIComponent {
   }
 
   render() {
-    const { article, body } = this.createShell('/assets/icons/lecture.svg', 'university-blue', this.subtitle());
+    const { article, body } = this.createShell('assets/icons/lecture.svg', 'university-blue', this.subtitle());
     body.innerHTML = '<label class="widget-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Предмет, преподаватель или аудитория" aria-label="Поиск по парам"></label><div class="day-switcher" aria-label="День недели"></div><div class="api-state today-content" role="status"></div>';
     this.content = body.querySelector('.today-content');
     this.daySwitcher = body.querySelector('.day-switcher');

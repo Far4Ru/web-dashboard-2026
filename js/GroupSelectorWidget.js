@@ -10,7 +10,7 @@ export default class GroupSelectorWidget extends UIComponent {
   }
 
   render() {
-    const { article, body } = this.createShell('/assets/icons/student.svg', 'university-blue', 'Управляет связанными виджетами');
+    const { article, body } = this.createShell('assets/icons/student.svg', 'university-blue', 'Управляет связанными виджетами');
     body.innerHTML = '<div class="entity-toggle" role="group" aria-label="Тип расписания"><button type="button" data-mode="group">Группа</button><button type="button" data-mode="teacher">Преподаватель</button></div><form class="selector-form"><label><span class="selector-label"></span><input autocomplete="off"></label><datalist></datalist><button type="submit">Показать</button></form><small class="selector-status" role="status">Загружаем каталог…</small>';
     this.input = body.querySelector('input'); this.input.value = this.selection.label;
     this.list = body.querySelector('datalist'); this.status = body.querySelector('.selector-status');
@@ -43,7 +43,7 @@ export default class GroupSelectorWidget extends UIComponent {
     this.element.querySelector('.selector-label').textContent = this.mode === 'group' ? 'Группа' : 'Преподаватель';
     this.input.placeholder = this.mode === 'group' ? 'Начните вводить номер группы' : 'Начните вводить фамилию';
     const icon = this.element.querySelector('.widget-icon img');
-    if (icon) icon.src = this.mode === 'group' ? '/assets/icons/student.svg' : '/assets/icons/teacher.svg';
+    if (icon) icon.src = this.mode === 'group' ? 'assets/icons/student.svg' : 'assets/icons/teacher.svg';
   }
   renderOptions() {
     const fragment = document.createDocumentFragment(); this.getOptions().forEach((item) => { const option = document.createElement('option'); option.value = item.label; fragment.append(option); });

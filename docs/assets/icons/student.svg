@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Выбор расписания студента</title>
+  <circle cx="32" cy="32" r="28" fill="#fff" stroke="#0072bc" stroke-width="4"/>
+  <path d="m13 24 19-10 19 10-19 10-19-10Z" fill="#fff7e4" stroke="#9b6704" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M21 29v8c0 5 5 9 11 9s11-4 11-9v-8" fill="#fff7e4" stroke="#9b6704" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M51 24v14" fill="none" stroke="#002f5e" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="51" cy="41" r="3" fill="#0072bc"/>
+  <circle cx="45" cy="46" r="8" fill="#0072bc" stroke="#fff" stroke-width="2"/>
+  <path d="m41.5 46 2.3 2.3 4.7-5" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18 51h19" fill="none" stroke="#002f5e" stroke-width="2" stroke-linecap="round"/>
+</svg>

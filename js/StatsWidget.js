@@ -16,7 +16,7 @@ export default class StatsWidget extends UIComponent {
   }
 
   render() {
-    const { article, body } = this.createShell('/assets/icons/university.svg', 'university-blue', 'Актуальные данные API');
+    const { article, body } = this.createShell('assets/icons/university.svg', 'university-blue', 'Актуальные данные API');
     body.innerHTML = '<div class="api-state stats-content" role="status"></div>';
     this.content = body.querySelector('.stats-content');
     if (this.stats) this.showStats();

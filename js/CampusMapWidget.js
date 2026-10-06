@@ -18,7 +18,7 @@ export default class CampusMapWidget extends UIComponent {
   }
 
   render() {
-    const { article, body } = this.createShell('/assets/icons/map.svg', 'mint', this.subtitle());
+    const { article, body } = this.createShell('assets/icons/map.svg', 'mint', this.subtitle());
     body.classList.add('map-widget-body');
     body.innerHTML = '<div class="api-state map-content is-loading" role="status">Строим карту занятий…</div>';
     this.content = body.querySelector('.map-content'); this.load(); return article;

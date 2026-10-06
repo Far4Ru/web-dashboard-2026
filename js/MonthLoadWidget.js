@@ -11,7 +11,7 @@ export default class MonthLoadWidget extends UIComponent {
   }
 
   render() {
-    const { article, body } = this.createShell('/assets/icons/lecture.svg', 'university-blue', this.subtitle());
+    const { article, body } = this.createShell('assets/icons/lecture.svg', 'university-blue', this.subtitle());
     body.innerHTML = '<div class="month-toolbar"><button type="button" data-month-prev aria-label="Предыдущий месяц">←</button><strong></strong><button type="button" data-month-next aria-label="Следующий месяц">→</button></div><div class="api-state month-content" role="status"></div>';
     this.content = body.querySelector('.month-content'); this.monthLabel = body.querySelector('.month-toolbar strong');
     this.listen(body.querySelector('[data-month-prev]'), 'click', () => this.shiftMonth(-1));
