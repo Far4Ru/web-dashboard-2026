@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/sutd-api/:path*",
+      "destination": "https://schedule.sutd.ru/api/:path*"
+    },
+    {
+      "source": "/geo-api/:path*",
+      "destination": "https://nominatim.openstreetmap.org/:path*"
+    },
+    {
+      "source": "/quotes-source/:path*",
+      "destination": "https://citaty.info/:path*"
+    }
+  ]
+}

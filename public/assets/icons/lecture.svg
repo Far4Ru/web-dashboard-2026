@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Лекция</title>
+  <circle cx="32" cy="32" r="28" fill="#fff" stroke="#0072bc" stroke-width="4"/>
+  <rect x="14" y="15" width="36" height="24" rx="2" fill="#fff7e4" stroke="#9b6704" stroke-width="2.5"/>
+  <path d="M20 22h13m-13 6h9m13-7-7 7m7-7-2 7" fill="none" stroke="#6b4500" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="27" cy="42" r="4" fill="#0072bc"/>
+  <path d="M18 52c1-5 4-7 9-7s8 2 9 7m6-13v13" fill="none" stroke="#0072bc" stroke-width="3" stroke-linecap="round"/>
+</svg>

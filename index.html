@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Интерактивный учебный дашборд ПРОМТЕХДИЗАЙН" />
+    <title>Учебный дашборд — ПРОМТЕХДИЗАЙН</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles/main.css" />
+    <link rel="stylesheet" href="./styles/components.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="main-content">
+        <header class="topbar">
+          <div class="page-heading">
+            <a class="brand" href="#dashboard" aria-label="ПРОМТЕХДИЗАЙН, главная">
+              <img class="brand-logo" src="https://schedule.sutd.ru/assets/logo-UvcKFF5M.svg" alt="Логотип СПбГУПТД" width="80" height="83" />
+              <span><strong>ПРОМТЕХДИЗАЙН</strong><small>Санкт-Петербургский государственный университет<br>промышленных технологий и дизайна</small></span>
+            </a>
+          </div>
+          <div class="topbar-actions">
+            <button class="add-button" id="add-widget-button" type="button"><span>＋</span> Добавить виджет</button>
+          </div>
+        </header>
+
+        <div class="breadcrumbs"><span>sutd.ru</span><b>/</b> Учебный дашборд</div>
+        <section class="dashboard-intro">
+          <h1 id="greeting-label"></h1>
+          <p class="today-date" id="today-label"></p>
+        </section>
+
+        <section id="dashboard" class="dashboard-grid" aria-label="Виджеты рабочего пространства"></section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="widget-modal" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <header><div><p class="eyebrow">БИБЛИОТЕКА</p><h2 id="modal-title">Добавить виджет</h2></div><button class="icon-button" data-close-modal type="button" aria-label="Закрыть">×</button></header>
+        <div class="widget-picker">
+          <button data-widget-type="selector" type="button"><span class="picker-icon university-blue"><img src="/assets/icons/student.svg" alt=""></span><strong>Выбор расписания</strong><small>Группа или преподаватель</small></button>
+          <button data-widget-type="stats" type="button"><span class="picker-icon university-blue"><img src="/assets/icons/university.svg" alt=""></span><strong>Статистика</strong><small>Группы и преподаватели</small></button>
+          <button data-widget-type="map" type="button"><span class="picker-icon mint"><img src="/assets/icons/map.svg" alt=""></span><strong>Карта</strong><small>Адреса занятий сегодня</small></button>
+          <button data-widget-type="today" type="button"><span class="picker-icon blue"><img src="/assets/icons/lecture.svg" alt=""></span><strong>Пары по дням</strong><small>Расписание выбранной группы</small></button>
+          <button data-widget-type="rooms" type="button"><span class="picker-icon amber"><img src="/assets/icons/classroom.svg" alt=""></span><strong>Аудитории</strong><small>Занятые группой аудитории по дням</small></button>
+          <button data-widget-type="statham" type="button"><span class="picker-icon violet"><img src="/assets/icons/quote.svg" alt=""></span><strong>Цитаты Стэтхема</strong><small>Случайная цитата по нажатию</small></button>
+          <button data-widget-type="monthLoad" type="button"><span class="picker-icon university-blue"><img src="/assets/icons/lecture.svg" alt=""></span><strong>Загрузка месяца</strong><small>Количество пар по дням</small></button>
+        </div>
+      </section>
+    </div>
+
+    <div id="toast-region" class="toast-region" aria-live="polite"></div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
