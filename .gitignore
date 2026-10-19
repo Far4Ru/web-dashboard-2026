@@ -1,7 +1,12 @@
 node_modules/
 dist/
+docs/
+/icons-preview.png
 .vite/
 .chrome-local/
 *.log
 
 *.md
+!/README.md
+
+.vercel

@@ -1,5 +1,10 @@
 {
+  "outputDirectory": "docs",
   "rewrites": [
+    {
+      "source": "/sutd-api/:path*/",
+      "destination": "https://schedule.sutd.ru/api/:path*/"
+    },
     {
       "source": "/sutd-api/:path*",
       "destination": "https://schedule.sutd.ru/api/:path*"
