@@ -1,11 +1,12 @@
 export default class UIComponent {
-  constructor({ id, title, size = 'medium', span, height, onRemove, onChange }) {
+  constructor({ id, title, size = 'medium', span, height, hidden = false, onRemove, onChange }) {
     if (new.target === UIComponent) throw new Error('UIComponent — абстрактный класс');
     this.id = id;
     this.title = title;
     this.size = size;
     this.span = span || (size === 'large' ? 12 : 6);
     this.height = height || 320;
+    this.hidden = hidden;
     this.onRemove = onRemove;
     this.onChange = onChange;
     this.element = null;
@@ -20,6 +21,7 @@ export default class UIComponent {
     article.style.setProperty('--widget-span', this.span);
     article.style.setProperty('--widget-height', `${this.height}px`);
     article.tabIndex = 0;
+    article.hidden = this.hidden;
 
     const header = document.createElement('header');
     header.className = 'widget-header drag-handle';
@@ -50,7 +52,7 @@ export default class UIComponent {
     this.listeners.push(() => target.removeEventListener(event, handler, options));
   }
 
-  serialize() { return { id: this.id, type: this.type, size: this.size, span: this.span, height: this.height }; }
+  serialize() { return { id: this.id, type: this.type, size: this.size, span: this.span, height: this.height, hidden: this.hidden }; }
 
   destroy() {
     this.abortController?.abort();

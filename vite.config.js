@@ -1,7 +1,16 @@
 import { defineConfig } from 'vite';
+import { cp } from 'node:fs/promises';
+import path from 'node:path';
 
 export default defineConfig({
   base: './',
+  plugins: [{
+    name: 'copy-request-archive',
+    apply: 'build',
+    async closeBundle() {
+      await cp(path.resolve('requests'), path.resolve('docs/requests'), { recursive: true });
+    }
+  }],
   build: {
     outDir: 'docs',
     emptyOutDir: true

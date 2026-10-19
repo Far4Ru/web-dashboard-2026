@@ -1,60 +1,71 @@
 import UIComponent from './UIComponent.js';
-import { getScheduleForSelection, getLessonsForDate, getMoscowDate, getWeekDates } from './SutdApi.js';
+import DayControls from './DayControls.js';
+import { getLessonsForDate, getScheduleForSelectionWeek, getWeekStart } from './SutdApi.js';
+import { filterByScope, filterByTime, getUniversitySnapshot, lessonsForDate } from './UniversityData.js';
 
 export default class TodayScheduleWidget extends UIComponent {
   constructor(config) {
-    super({ title: 'Пары по дням', span: 8, height: 430, ...config });
+    super({ title: 'Пары по дням', span: 8, height: 560, ...config });
     this.type = 'today'; this.selection = config.state?.selection || { type: 'group', id: 2, label: '1-ГД-13' };
-    this.payload = null; this.query = ''; this.selectedDate = getMoscowDate();
+    this.controlState = config.state?.controls || {}; this.query = config.state?.query || ''; this.lessons = []; this.snapshot = null;
   }
 
   render() {
     const { article, body } = this.createShell('assets/icons/lecture.svg', 'university-blue', this.subtitle());
-    body.innerHTML = '<label class="widget-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Предмет, преподаватель или аудитория" aria-label="Поиск по парам"></label><div class="day-switcher" aria-label="День недели"></div><div class="api-state today-content" role="status"></div>';
+    body.innerHTML = '<label class="widget-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Предмет, преподаватель, группа или аудитория" aria-label="Поиск по парам"></label><div class="api-state today-content" role="status"></div>';
     this.content = body.querySelector('.today-content');
-    this.daySwitcher = body.querySelector('.day-switcher');
-    this.listen(body.querySelector('input'), 'input', (event) => { this.query = event.target.value.trim().toLocaleLowerCase('ru'); this.showLessons(); });
-    this.listen(this.daySwitcher, 'click', (event) => { const button = event.target.closest('[data-date]'); if (!button) return; this.selectedDate = button.dataset.date; this.renderDays(); this.showLessons(); });
-    this.load(); return article;
+    const search = body.querySelector('.widget-search input'); search.value = this.query;
+    this.listen(search, 'input', () => { this.query = search.value.trim().toLocaleLowerCase('ru'); this.showLessons(); this.onChange?.(); });
+    this.controls = new DayControls(this, body, ['my', 'all', 'address', 'teacher'], this.controlState, (kind) => kind === 'data' ? this.load() : this.showLessons());
+    if (!this.hidden) this.load(); return article;
   }
 
   async load() {
     this.abortController?.abort(); this.abortController = new AbortController();
-    this.content.className = 'api-state today-content is-loading'; this.content.textContent = 'Загружаем пары на сегодня…';
-    try { this.payload = await getScheduleForSelection(this.selection, this.abortController.signal); this.renderDays(); this.showLessons(); }
-    catch (error) { if (error.name !== 'AbortError') { this.content.className = 'api-state today-content is-error'; this.content.textContent = 'Не удалось загрузить пары.'; } }
+    const signal = this.abortController.signal;
+    const { scope, date } = this.controls.state;
+    this.content.className = 'api-state today-content is-loading'; this.content.textContent = 'Загружаем пары…';
+    try {
+      if (scope === 'my') {
+        const payload = await getScheduleForSelectionWeek(this.selection, getWeekStart(date), signal);
+        this.lessons = getLessonsForDate(payload, date).map((lesson) => ({ ...lesson, group: lesson.group || (this.selection.type === 'group' ? this.selection.label : ''), groupId: this.selection.type === 'group' ? this.selection.id : null }));
+      } else {
+        const snapshot = await getUniversitySnapshot(date.slice(0, 7), (loaded, total) => {
+          if (!signal.aborted && total) this.content.textContent = `Собираем расписания: ${loaded} из ${total} частей…`;
+        });
+        if (signal.aborted) return;
+        this.snapshot = snapshot;
+        this.controls.setSnapshot(snapshot);
+        this.lessons = lessonsForDate(snapshot, date);
+      }
+      if (!signal.aborted) this.showLessons();
+    } catch (error) {
+      if (!signal.aborted) { this.content.className = 'api-state today-content is-error'; this.content.textContent = 'Не удалось загрузить пары.'; }
+    }
   }
 
   showLessons() {
-    if (!this.payload) return;
-    const lessons = getLessonsForDate(this.payload, this.selectedDate).filter((lesson) => [lesson.subject, lesson.teacher, lesson.classroom, lesson.building].join(' ').toLocaleLowerCase('ru').includes(this.query));
+    if (!this.controls) return;
+    const { scope, target, date, period, from, to } = this.controls.state;
+    let lessons = scope === 'my' ? this.lessons : filterByScope(this.lessons, scope, target, this.selection);
+    lessons = filterByTime(lessons, date, period, from, to).filter((lesson) =>
+      [lesson.subject, lesson.teacher, lesson.group, lesson.classroom, lesson.building].join(' ').toLocaleLowerCase('ru').includes(this.query));
     this.content.className = 'today-content'; this.content.replaceChildren();
-    if (!lessons.length) { this.content.classList.add('api-state', 'is-empty'); this.content.textContent = this.query ? 'По вашему запросу ничего не найдено.' : 'В этот день занятий нет.'; return; }
+    if (!lessons.length) { this.content.classList.add('api-state', 'is-empty'); this.content.textContent = this.query || target ? 'По вашему запросу ничего не найдено.' : 'На выбранное время занятий нет.'; return; }
     const list = document.createElement('div'); list.className = 'today-list';
     lessons.forEach((lesson) => {
       const item = document.createElement('article'); item.className = 'today-lesson';
       const time = document.createElement('div'); time.className = 'today-time'; time.innerHTML = '<strong></strong><span></span>'; time.querySelector('strong').textContent = lesson.start_time; time.querySelector('span').textContent = lesson.end_time || '';
       const info = document.createElement('div'); info.className = 'today-info';
       const title = document.createElement('strong'); title.textContent = lesson.subject;
-      const counterpart = this.selection.type === 'teacher' ? lesson.group : (lesson.teacher !== '–' ? lesson.teacher : null);
-      const details = document.createElement('p'); details.textContent = [lesson.lesson_type, counterpart].filter(Boolean).join(' · ');
-      const room = document.createElement('span'); room.textContent = `${lesson.classroom} · ${lesson.building}`;
+      const details = document.createElement('p'); details.textContent = [lesson.lesson_type, lesson.teacher !== '–' ? lesson.teacher : '', lesson.group].filter(Boolean).join(' · ');
+      const room = document.createElement('span'); room.textContent = [lesson.classroom, lesson.building].filter(Boolean).join(' · ');
       info.append(title, details, room); item.append(time, info); list.append(item);
     });
     this.content.append(list);
   }
 
-  renderDays() {
-    const days = getWeekDates(this.payload);
-    if (!days.some((day) => day.value === this.selectedDate)) this.selectedDate = days[0].value;
-    this.daySwitcher.replaceChildren();
-    days.forEach((day) => {
-      const button = document.createElement('button'); button.type = 'button'; button.dataset.date = day.value; button.textContent = day.label; button.className = day.value === this.selectedDate ? 'active' : '';
-      this.daySwitcher.append(button);
-    });
-  }
-
   subtitle() { return `${this.selection.type === 'teacher' ? 'Преподаватель' : 'Группа'} ${this.selection.label}`; }
-  setSelection(selection) { this.selection = selection; this.element.querySelector('.widget-heading small').textContent = this.subtitle(); this.load(); }
-  serialize() { return { ...super.serialize(), state: { selection: this.selection } }; }
+  setSelection(selection) { this.selection = selection; this.element.querySelector('.widget-heading small').textContent = this.subtitle(); if (!this.hidden && this.controls?.state.scope === 'my') this.load(); }
+  serialize() { return { ...super.serialize(), state: { selection: this.selection, controls: this.controls?.state || this.controlState, query: this.query } }; }
 }

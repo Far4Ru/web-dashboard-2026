@@ -22,7 +22,12 @@
             </a>
           </div>
           <div class="topbar-actions">
-            <button class="add-button" id="add-widget-button" type="button"><span>＋</span> Добавить виджет</button>
+            <button class="profile-button" id="profile-button" type="button" aria-label="Настроить профиль" aria-expanded="false" title="Настроить профиль">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+            </button>
+            <button class="profile-button settings-button" id="settings-button" type="button" aria-label="Настройки" title="Настройки">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5h4l.6 2.3 1.6.9 2.3-.6 2 3.5-1.7 1.7v1.8l1.7 1.7-2 3.5-2.3-.6-1.6.9-.6 2.3h-4l-.6-2.3-1.6-.9-2.3.6-2-3.5 1.7-1.7v-1.8L3.5 8.6l2-3.5 2.3.6 1.6-.9z"/><circle cx="12" cy="11.5" r="3"/></svg>
+            </button>
           </div>
         </header>
 
@@ -36,18 +41,19 @@
       </main>
     </div>
 
-    <div class="modal-backdrop" id="widget-modal" hidden>
-      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <header><div><p class="eyebrow">БИБЛИОТЕКА</p><h2 id="modal-title">Добавить виджет</h2></div><button class="icon-button" data-close-modal type="button" aria-label="Закрыть">×</button></header>
-        <div class="widget-picker">
-          <button data-widget-type="selector" type="button"><span class="picker-icon university-blue"><img src="assets/icons/student.svg" alt=""></span><strong>Выбор расписания</strong><small>Группа или преподаватель</small></button>
-          <button data-widget-type="stats" type="button"><span class="picker-icon university-blue"><img src="assets/icons/university.svg" alt=""></span><strong>Статистика</strong><small>Группы и преподаватели</small></button>
-          <button data-widget-type="map" type="button"><span class="picker-icon mint"><img src="assets/icons/map.svg" alt=""></span><strong>Карта</strong><small>Адреса занятий сегодня</small></button>
-          <button data-widget-type="today" type="button"><span class="picker-icon blue"><img src="assets/icons/lecture.svg" alt=""></span><strong>Пары по дням</strong><small>Расписание выбранной группы</small></button>
-          <button data-widget-type="rooms" type="button"><span class="picker-icon amber"><img src="assets/icons/classroom.svg" alt=""></span><strong>Аудитории</strong><small>Занятые группой аудитории по дням</small></button>
-          <button data-widget-type="statham" type="button"><span class="picker-icon violet"><img src="assets/icons/quote.svg" alt=""></span><strong>Цитаты Стэтхема</strong><small>Случайная цитата по нажатию</small></button>
-          <button data-widget-type="monthLoad" type="button"><span class="picker-icon university-blue"><img src="assets/icons/lecture.svg" alt=""></span><strong>Загрузка месяца</strong><small>Количество пар по дням</small></button>
-        </div>
+    <div class="modal-backdrop" id="settings-modal" hidden>
+      <section class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <header><div><p class="eyebrow">РАБОЧЕЕ ПРОСТРАНСТВО</p><h2 id="settings-title">Настройки</h2></div><button class="icon-button" data-close-modal type="button" aria-label="Закрыть">×</button></header>
+        <section class="settings-section" aria-labelledby="saved-data-title">
+          <h3 id="saved-data-title">Сохранённые данные</h3>
+          <p>Кэш браузера ускоряет повторное открытие расписаний. Архив в составе сайта доступен после очистки.</p>
+          <div id="saved-data-list" class="settings-list" role="status"></div>
+        </section>
+        <section class="settings-section" aria-labelledby="widgets-title">
+          <h3 id="widgets-title">Управление виджетами</h3>
+          <div id="settings-widget-list" class="settings-list"></div>
+          <div class="settings-add"><select id="settings-add-type" aria-label="Тип нового виджета"><option value="stats">Университет сегодня</option><option value="map">Карта занятий</option><option value="today">Пары по дням</option><option value="rooms">Аудитории по дням</option><option value="monthLoad">Загрузка месяца</option><option value="statham">Цитаты Стэтхема</option></select><button type="button" id="settings-add-widget">Добавить виджет</button></div>
+        </section>
       </section>
     </div>
 

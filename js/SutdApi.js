@@ -1,22 +1,37 @@
+import { cachedJson, withAbort } from './DataCache.js';
+import { getArchivedCatalog, getArchivedGroupSchedule, getArchivedTeacherSchedule } from './RequestArchive.js';
+
 const API_BASE = '/sutd-api';
 
-export async function fetchJson(path, signal) {
+function archiveFallback(path) {
+  const url = new URL(path, 'https://local.invalid');
+  if (url.pathname === '/student-filter-catalog/') return () => getArchivedCatalog('groups');
+  if (url.pathname === '/teachers/') return () => getArchivedCatalog('teachers');
+  if (url.pathname === '/institutes/') return () => getArchivedCatalog('institutes');
+  if (url.pathname === '/group_schedule/') return () => getArchivedGroupSchedule(url.searchParams.get('group_id'), url.searchParams.get('week_start'));
+  if (url.pathname === '/teacher_schedule/') return () => getArchivedTeacherSchedule(url.searchParams.get('teacher_id'), url.searchParams.get('week_start'));
+  return null;
+}
+
+async function requestJson(path) {
   let lastError;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetch(`${API_BASE}${path}`, { signal, headers: { Accept: 'application/json' } });
+      const response = await fetch(`${API_BASE}${path}`, { headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error(`API вернул HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
-      if (error.name === 'AbortError') throw error;
       lastError = error;
-      if (!attempt) await new Promise((resolve, reject) => {
-        const timer = setTimeout(resolve, 450);
-        signal?.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('Запрос отменён', 'AbortError')); }, { once: true });
-      });
+      if (!attempt) await new Promise((resolve) => setTimeout(resolve, 450));
     }
   }
   throw lastError;
+}
+
+export function fetchJson(path, signal) {
+  const catalog = /^(\/student-filter-catalog\/|\/teachers\/|\/institutes\/)/.test(path);
+  const ttl = catalog ? 24 * 60 * 60 * 1000 : 60 * 60 * 1000;
+  return withAbort(cachedJson(`sutd:${path}`, () => requestJson(path), ttl, archiveFallback(path)), signal);
 }
 
 export const getCatalog = (signal) => fetchJson('/student-filter-catalog/?lang=ru', signal);

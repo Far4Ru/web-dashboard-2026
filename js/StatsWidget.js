@@ -1,108 +1,102 @@
 import UIComponent from './UIComponent.js';
-import {
-  getCatalog,
-  getInstitutes,
-  getScheduleForSelection,
-  getTeachers,
-  getTodayLessons
-} from './SutdApi.js';
+import { getMoscowDate } from './SutdApi.js';
+import { activeTeachers, getUniversitySnapshot, isActiveInSemester, lessonsForDate, monthDates, semesterMonths } from './UniversityData.js';
+
+const formatNumber = (value) => new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(value);
 
 export default class StatsWidget extends UIComponent {
   constructor(config) {
-    super({ title: 'Университет сегодня', span: 4, height: 390, ...config });
+    super({ title: 'Университет сегодня', span: 6, height: 650, ...config });
     this.type = 'stats';
-    this.stats = config.state?.stats || null;
-    this.selection = config.state?.selection || { type: 'group', id: 2, label: '1-ГД-13' };
+    this.stats = config.state?.stats?.version === 2 ? config.state.stats : null;
   }
 
   render() {
-    const { article, body } = this.createShell('assets/icons/university.svg', 'university-blue', 'Актуальные данные API');
+    const { article, body } = this.createShell('assets/icons/university.svg', 'university-blue', 'По расписаниям всех групп');
     body.innerHTML = '<div class="api-state stats-content" role="status"></div>';
     this.content = body.querySelector('.stats-content');
     if (this.stats) this.showStats();
-    this.loadStats();
+    if (!this.hidden) this.loadStats();
     return article;
   }
 
   async loadStats() {
-    this.abortController?.abort();
-    this.abortController = new AbortController();
-    if (!this.stats) { this.content.className = 'api-state stats-content is-loading'; this.content.textContent = 'Обновляем статистику…'; }
+    this.abortController?.abort(); this.abortController = new AbortController();
+    const signal = this.abortController.signal;
+    if (!this.stats) { this.content.className = 'api-state stats-content is-loading'; this.content.textContent = 'Собираем статистику университета…'; }
     try {
-      const [catalog, teachers, institutes, schedule] = await Promise.all([
-        getCatalog(this.abortController.signal),
-        getTeachers(this.abortController.signal),
-        getInstitutes(this.abortController.signal),
-        getScheduleForSelection(this.selection, this.abortController.signal)
-      ]);
-      const uniqueGroups = new Map((catalog.groups || []).map((group) => [group.value, group]));
-      const uniqueTeachers = new Map((teachers.items || []).map((teacher) => [teacher.id, teacher]));
-      const uniqueInstitutes = new Set((institutes.items || []).map((institute) => institute.value));
-      const courses = new Map(Array.from({ length: 6 }, (_, index) => [index + 1, 0]));
-      uniqueGroups.forEach((group) => {
-        const match = String(group.label || '').match(/^([1-6])-/);
-        if (match) courses.set(Number(match[1]), courses.get(Number(match[1])) + 1);
+      const snapshot = await getUniversitySnapshot(getMoscowDate().slice(0, 7), (loaded, total) => {
+        if (!signal.aborted && !this.stats && total) this.content.textContent = `Собираем расписания: ${loaded} из ${total} частей…`;
       });
-      const todayLessons = getTodayLessons(schedule);
-      const uniqueLessons = new Set(todayLessons.map((lesson) => [
-        lesson.date || '', lesson.start_time || '', lesson.end_time || '',
-        lesson.discipline || lesson.subject || '', lesson.classroom || lesson.room || ''
-      ].join('|')));
+      if (signal.aborted) return;
+      const groups = snapshot.groups.filter(isActiveInSemester);
+      const teachers = activeTeachers(snapshot);
+      const institutes = new Set(groups.flatMap((group) => group.instituteSlugs));
+      const monthSeries = semesterMonths(snapshot).map((month) => {
+        let groupPairs = 0; let teacherPairs = 0;
+        monthDates(month).forEach((date) => lessonsForDate(snapshot, date).forEach((lesson) => {
+          groupPairs += 1;
+          teacherPairs += lesson.teachers?.length || 0;
+        }));
+        return { month, perGroup: groups.length ? groupPairs / groups.length : 0, perTeacher: teachers.size ? teacherPairs / teachers.size : 0 };
+      });
       this.stats = {
-        groups: uniqueGroups.size,
-        teachers: uniqueTeachers.size,
-        institutes: uniqueInstitutes.size,
-        lessonsToday: uniqueLessons.size,
-        courses: [...courses].map(([course, count]) => ({ course, count })),
-        selectionLabel: this.selection.label,
-        selectionKey: `${this.selection.type}:${this.selection.id}`,
-        updatedAt: new Date().toISOString()
+        version: 2,
+        groups: groups.length,
+        teachers: teachers.size,
+        institutes: institutes.size,
+        lessonsToday: lessonsForDate(snapshot, getMoscowDate()).length,
+        monthSeries,
+        updatedAt: snapshot.generatedAt,
+        archivedParts: snapshot.archivedParts
       };
       this.showStats(); this.onChange?.();
     } catch (error) {
-      if (error.name === 'AbortError') return;
-      if (!this.stats) { this.content.className = 'api-state stats-content is-error'; this.content.textContent = 'Не удалось обновить статистику.'; }
+      if (signal.aborted) return;
+      if (!this.stats) { this.content.className = 'api-state stats-content is-error'; this.content.textContent = 'Не удалось собрать общую статистику. Попробуйте обновить страницу.'; }
     }
+  }
+
+  createChart(title, key, denominator) {
+    const chart = document.createElement('section'); chart.className = 'load-chart';
+    const heading = document.createElement('div'); heading.className = 'load-chart-heading';
+    const name = document.createElement('strong'); name.textContent = title;
+    const unit = document.createElement('span'); unit.textContent = `пар / ${denominator} в месяц`;
+    heading.append(name, unit);
+    const bars = document.createElement('div'); bars.className = 'load-chart-bars';
+    const maximum = Math.max(1, ...this.stats.monthSeries.map((point) => point[key]));
+    this.stats.monthSeries.forEach((point) => {
+      const bar = document.createElement('div'); bar.className = 'load-chart-bar';
+      bar.title = `${point.month}: ${formatNumber(point[key])} пар на ${denominator}`;
+      const value = document.createElement('strong'); value.textContent = formatNumber(point[key]);
+      const column = document.createElement('i'); column.style.setProperty('--bar-height', `${Math.max(4, Math.round(point[key] / maximum * 100))}%`);
+      const label = document.createElement('span');
+      label.textContent = new Intl.DateTimeFormat('ru-RU', { month: 'short', timeZone: 'UTC' }).format(new Date(`${point.month}-01T12:00:00Z`)).replace('.', '');
+      bar.append(value, column, label); bars.append(bar);
+    });
+    chart.append(heading, bars); return chart;
   }
 
   showStats() {
     this.content.className = 'stats-content'; this.content.replaceChildren();
     const grid = document.createElement('div'); grid.className = 'stats-grid';
     [
-      ['Групп', this.stats.groups],
-      ['Преподавателей', this.stats.teachers],
-      ['Институтов', this.stats.institutes],
+      ['Активные группы', this.stats.groups],
+      ['Активные преподаватели', this.stats.teachers],
+      ['Институты', this.stats.institutes],
       ['Занятий сегодня', this.stats.lessonsToday]
     ].forEach(([label, value]) => {
       const item = document.createElement('div'); const number = document.createElement('strong'); const caption = document.createElement('span');
-      number.textContent = Number.isFinite(value) ? new Intl.NumberFormat('ru-RU').format(value) : '—'; caption.textContent = label; item.append(number, caption); grid.append(item);
+      number.textContent = Number.isFinite(value) ? formatNumber(value) : '—'; caption.textContent = label; item.append(number, caption); grid.append(item);
     });
-    const chart = document.createElement('section'); chart.className = 'course-chart';
-    const chartTitle = document.createElement('div'); chartTitle.className = 'course-chart-title';
-    chartTitle.innerHTML = '<strong>Группы по курсам</strong><span>курс / групп</span>';
-    const bars = document.createElement('div'); bars.className = 'course-bars';
-    const maximum = Math.max(1, ...(this.stats.courses || []).map(({ count }) => count));
-    (this.stats.courses || []).forEach(({ course, count }) => {
-      const bar = document.createElement('div'); bar.className = 'course-bar';
-      bar.title = `${course}-й курс: ${count} групп`;
-      const value = document.createElement('strong'); value.textContent = count;
-      const column = document.createElement('i'); column.style.setProperty('--bar-height', `${Math.max(4, Math.round(count / maximum * 100))}%`);
-      const label = document.createElement('span'); label.textContent = course;
-      bar.append(value, column, label); bars.append(bar);
-    });
-    chart.append(chartTitle, bars);
-    const context = document.createElement('small');
-    context.className = 'stats-context';
-    context.textContent = `Занятия: ${this.stats.selectionLabel || this.selection.label}`;
-    const updated = document.createElement('small'); updated.textContent = `Обновлено ${new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' }).format(new Date(this.stats.updatedAt))}`;
-    this.content.append(grid, chart, context, updated);
+    const note = document.createElement('small'); note.className = 'stats-context';
+    note.textContent = this.stats.archivedParts
+      ? `Показаны архивные данные: ${this.stats.archivedParts} из 28 частей. Активность рассчитана по расписаниям групп текущего семестра.`
+      : 'Активность и нагрузка рассчитаны по расписаниям групп текущего семестра.';
+    const updated = document.createElement('small');
+    updated.textContent = `Обновлено ${new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(this.stats.updatedAt))}`;
+    this.content.append(grid, this.createChart('Загруженность преподавателей', 'perTeacher', 'преподавателя'), this.createChart('Загруженность студентов', 'perGroup', 'группу'), note, updated);
   }
 
-  setSelection(selection) {
-    if (`${selection.type}:${selection.id}` === `${this.selection.type}:${this.selection.id}`) return;
-    this.selection = selection;
-    this.loadStats();
-  }
-
-  serialize() { return { ...super.serialize(), state: { stats: this.stats, selection: this.selection } }; }
+  serialize() { return { ...super.serialize(), state: { stats: this.stats } }; }
 }

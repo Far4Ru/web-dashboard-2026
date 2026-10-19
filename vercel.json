@@ -1,5 +1,8 @@
 {
   "outputDirectory": "docs",
+  "functions": {
+    "api/university.js": { "maxDuration": 60 }
+  },
   "rewrites": [
     {
       "source": "/sutd-api/:path*/",

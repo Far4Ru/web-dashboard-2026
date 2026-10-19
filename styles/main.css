@@ -51,6 +51,10 @@ h1, h2 { font-family: 'Manrope', system-ui, sans-serif; letter-spacing: 0; }
 h1 { margin: 0; font-size: clamp(30px, 3vw, 42px); font-weight: 400; line-height: 1.1; }
 h1 span { color: #bcce4e; font-size: .65em; vertical-align: top; }
 .topbar-actions { display: flex; align-items: center; gap: 11px; }
+.profile-button { width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; padding: 0; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--accent); cursor: pointer; transition: .2s ease; }
+.profile-button svg { width: 23px; height: 23px; }
+.profile-button:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); }
+.settings-button { color: var(--accent); }
 .icon-button { width: 43px; height: 43px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; font-size: 19px; transition: .2s ease; }
 .icon-button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .add-button { height: 44px; padding: 0 18px; border: 0; border-radius: 9px; background: var(--accent); color: #fff; cursor: pointer; font-weight: 600; box-shadow: none; transition: .2s ease; }
@@ -72,6 +76,7 @@ h1 span { color: #bcce4e; font-size: .65em; vertical-align: top; }
 .group-search button { padding: 0 24px; border: 0; border-radius: 9px; background: var(--accent); color: #fff; cursor: pointer; font-weight: 600; }
 .group-search small { display: block; min-height: 16px; margin-top: 9px; color: var(--muted); font-size: 12px; }
 .dashboard-grid { max-width: 1344px; margin: 0 auto; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-flow: dense; gap: 18px; align-items: start; }
+.dashboard-grid .widget[hidden] { display: none !important; }
 
 .modal-backdrop[hidden] { display: none; }
 .modal-backdrop { position: fixed; z-index: 10000; isolation: isolate; inset: 0; padding: 20px; display: grid; place-items: center; background: rgba(9, 26, 21, .5); backdrop-filter: blur(6px); opacity: 0; transition: opacity .18s ease; }
@@ -80,6 +85,20 @@ h1 span { color: #bcce4e; font-size: .65em; vertical-align: top; }
 .is-open .modal { transform: none; }
 .modal header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
 .modal h2 { margin: 0; font-size: 25px; }
+.settings-modal { width: min(720px, 100%); max-height: min(85vh, 900px); overflow: auto; }
+.settings-section + .settings-section { margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--line); }
+.settings-section h3 { margin: 0 0 8px; font-size: 16px; }
+.settings-section > p { margin: 0 0 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.settings-list { display: grid; gap: 7px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 47px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
+.settings-row > span { display: grid; gap: 3px; }
+.settings-row strong { font-size: 11px; font-weight: 600; }
+.settings-row small { color: var(--muted); font-size: 10px; }
+.settings-row button, .settings-add button { flex: 0 0 auto; min-height: 30px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--accent); cursor: pointer; font-size: 10px; font-weight: 600; }
+.settings-row button:disabled { color: var(--muted); cursor: default; opacity: .55; }
+.settings-add { display: flex; gap: 8px; margin-top: 12px; }
+.settings-add select { flex: 1 1 auto; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink); font-size: 11px; }
+.settings-add button { font-size: 11px; }
 .widget-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .widget-picker button { padding: 18px; display: grid; grid-template-columns: 42px 1fr; column-gap: 13px; align-items: center; border: 1px solid var(--line); border-radius: 15px; background: var(--surface-soft); text-align: left; cursor: pointer; transition: .18s ease; }
 .widget-picker button:hover { border-color: #85ad9e; transform: translateY(-2px); }

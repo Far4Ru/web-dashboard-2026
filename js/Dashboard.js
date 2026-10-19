@@ -8,22 +8,25 @@ import MonthLoadWidget from './MonthLoadWidget.js';
 
 const types = { selector: GroupSelectorWidget, stats: StatsWidget, map: CampusMapWidget, today: TodayScheduleWidget, rooms: RoomsWidget, statham: StathamQuoteWidget, monthLoad: MonthLoadWidget };
 const defaultLayout = [
-  { id: 'selector-main', type: 'selector', span: 12, height: 250 },
-  { id: 'stats-main', type: 'stats', span: 4, height: 390 },
-  { id: 'map-main', type: 'map', span: 8, height: 360 },
-  { id: 'today-main', type: 'today', span: 8, height: 430 },
-  { id: 'rooms-main', type: 'rooms', span: 4, height: 430 },
+  { id: 'stats-main', type: 'stats', span: 6, height: 650 },
+  { id: 'map-main', type: 'map', span: 8, height: 480 },
+  { id: 'today-main', type: 'today', span: 8, height: 560 },
+  { id: 'rooms-main', type: 'rooms', span: 4, height: 560 },
   { id: 'month-load-main', type: 'monthLoad', span: 12, height: 500 },
   { id: 'statham-main', type: 'statham', span: 12, height: 270 }
 ];
 
 export default class Dashboard {
-  constructor(container, { onCountChange, onToast, currentSelection } = {}) {
+  constructor(container, { onCountChange, onToast, currentSelection, currentName = '', showProfileOnStart = false, onNameChange, onProfileVisibilityChange } = {}) {
     this.container = container;
     this.widgets = [];
     this.onCountChange = onCountChange;
     this.onToast = onToast;
     this.currentSelection = currentSelection || { type: 'group', id: 2, label: '1-ГД-13' };
+    this.currentName = currentName;
+    this.showProfileOnStart = showProfileOnStart;
+    this.onNameChange = onNameChange;
+    this.onProfileVisibilityChange = onProfileVisibilityChange;
     this.draggedId = null;
     this.resizing = null;
     this.listeners = [];
@@ -32,16 +35,22 @@ export default class Dashboard {
   render() {
     let saved;
     try { saved = JSON.parse(localStorage.getItem('sutd-dashboard-layout-v6')); } catch { saved = null; }
-    const layout = Array.isArray(saved) && saved.length ? saved : defaultLayout;
-    const upgradeStats = localStorage.getItem('sutd-stats-expanded-v1') !== '1';
+    const storedLayout = (Array.isArray(saved) ? saved : []).filter((config) => config.type !== 'selector');
+    const layout = storedLayout.length ? storedLayout : defaultLayout;
+    const upgradeStats = localStorage.getItem('sutd-stats-expanded-v2') !== '1';
+    const upgradeControls = localStorage.getItem('sutd-day-controls-expanded-v1') !== '1';
+    const minimumHeights = { map: 480, today: 560, rooms: 560 };
     layout.forEach((config) => {
-      const migrated = upgradeStats && config.type === 'stats'
-        ? { ...config, height: Math.max(390, config.height || 0) }
+      let migrated = upgradeStats && config.type === 'stats'
+        ? { ...config, span: Math.max(6, config.span || 0), height: Math.max(650, config.height || 0) }
         : config;
+      if (upgradeControls && minimumHeights[migrated.type]) migrated = { ...migrated, height: Math.max(minimumHeights[migrated.type], migrated.height || 0) };
       this.addWidget(migrated.type, migrated, false);
     });
-    if (upgradeStats) localStorage.setItem('sutd-stats-expanded-v1', '1');
+    if (upgradeStats) localStorage.setItem('sutd-stats-expanded-v2', '1');
+    if (upgradeControls) localStorage.setItem('sutd-day-controls-expanded-v1', '1');
     this.bindInteractions();
+    if (this.showProfileOnStart) this.openProfileEditor(false);
     this.updateCount();
   }
 
@@ -49,15 +58,16 @@ export default class Dashboard {
     const WidgetClass = types[widgetType];
     if (!WidgetClass) return;
     const state = ['selector', 'stats', 'map', 'today', 'rooms', 'monthLoad'].includes(widgetType)
-      ? { ...config.state, selection: this.currentSelection }
+      ? { ...config.state, selection: this.currentSelection, ...(widgetType === 'selector' ? { name: this.currentName } : {}) }
       : config.state;
     const widget = new WidgetClass({
       id: config.id || `${widgetType}-${crypto.randomUUID()}`,
       size: config.size || 'medium',
       span: config.span,
       height: config.height,
+      hidden: config.hidden || false,
       state,
-      onSelectionSelect: (selection) => this.setSelection(selection),
+      onProfileSave: (selection, name) => this.saveProfile(selection, name),
       onRemove: (id) => this.removeWidget(id),
       onChange: () => this.save()
     });
@@ -68,20 +78,62 @@ export default class Dashboard {
     return widget;
   }
 
-  removeWidget(widgetId) {
+  openProfileEditor(focus = true) {
+    let widget = this.widgets.find((item) => item.type === 'selector');
+    if (!widget) widget = this.addWidget('selector', { span: 12, height: 350 }, false);
+    this.container.prepend(widget.element);
+    this.syncOrder();
+    this.onProfileVisibilityChange?.(true);
+    if (focus) widget.nameInput?.focus();
+  }
+
+  toggleProfileEditor() {
+    const widget = this.widgets.find((item) => item.type === 'selector');
+    if (widget) this.removeWidget(widget.id, false);
+    else this.openProfileEditor();
+  }
+
+  saveProfile(selection, name) {
+    this.currentName = name.trim();
+    localStorage.setItem('sutd-user-name', this.currentName);
+    this.onNameChange?.(this.currentName);
+    this.setSelection(selection, false);
+    const widget = this.widgets.find((item) => item.type === 'selector');
+    if (widget) this.removeWidget(widget.id, false);
+    this.onToast?.('Профиль сохранён');
+  }
+
+  removeWidget(widgetId, announce = true) {
     const index = this.widgets.findIndex((widget) => widget.id === widgetId);
     if (index < 0) return;
     const [widget] = this.widgets.splice(index, 1);
     const title = widget.title; widget.destroy();
-    this.save(); this.updateCount(); this.onToast?.(`Виджет «${title}» удалён`);
+    if (widget.type === 'selector') this.onProfileVisibilityChange?.(false);
+    this.save(); this.updateCount(); if (announce) this.onToast?.(`Виджет «${title}» удалён`);
   }
 
-  setSelection(selection) {
+  setWidgetVisible(widgetId, visible) {
+    const widget = this.widgets.find((item) => item.id === widgetId && item.type !== 'selector');
+    if (!widget || widget.hidden === !visible) return;
+    widget.hidden = !visible;
+    widget.element.hidden = !visible;
+    if (visible) {
+      widget.controls?.refreshSuggestions?.();
+      widget.refreshSuggestions?.();
+      if (widget.loadStats) widget.loadStats();
+      else if (widget.load) widget.load();
+      else widget.loadQuotes?.();
+      requestAnimationFrame(() => widget.onResize?.());
+    } else widget.abortController?.abort();
+    this.save();
+  }
+
+  setSelection(selection, announce = true) {
     this.currentSelection = selection;
     localStorage.setItem('sutd-selected-entity', JSON.stringify(selection));
     this.widgets.forEach((widget) => widget.setSelection?.(selection));
     this.save();
-    this.onToast?.(`Расписание обновлено: ${selection.label}`);
+    if (announce) this.onToast?.(`Расписание обновлено: ${selection.label}`);
   }
 
   bindInteractions() {
@@ -188,7 +240,7 @@ export default class Dashboard {
     });
   }
 
-  syncOrder() { const ids = [...this.container.children].map((item) => item.dataset.widgetId); this.widgets.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)); this.save(); }
+  syncOrder() { const ids = [...this.container.children].map((item) => item.dataset.widgetId); this.widgets.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)); this.save(); requestAnimationFrame(() => this.widgets.forEach((widget) => widget.onResize?.())); }
   updateCount() { this.onCountChange?.(this.widgets.length); }
   save() { localStorage.setItem('sutd-dashboard-layout-v6', JSON.stringify(this.widgets.map((widget) => widget.serialize()))); }
   listen(target, event, handler) { target.addEventListener(event, handler); this.listeners.push(() => target.removeEventListener(event, handler)); }

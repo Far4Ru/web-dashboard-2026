@@ -14,7 +14,7 @@ export default class StathamQuoteWidget extends UIComponent {
     body.innerHTML = '<button class="statham-quote api-state is-loading" type="button" aria-label="Показать следующую цитату">Загружаем цитаты…</button><a class="quote-source" href="https://citaty.info/selection/citaty-stethema" target="_blank" rel="noreferrer">Источник: citaty.info ↗</a>';
     this.content = body.querySelector('.statham-quote');
     this.listen(this.content, 'click', () => this.nextQuote());
-    this.loadQuotes(); return article;
+    if (!this.hidden) this.loadQuotes(); return article;
   }
 
   async loadQuotes() {
