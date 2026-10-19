@@ -2,6 +2,7 @@ import UIComponent from './UIComponent.js';
 import DayControls from './DayControls.js';
 import { getLessonsForDate, getScheduleForSelectionWeek, getWeekStart } from './SutdApi.js';
 import { filterByTime, getUniversitySnapshot, lessonsForDate } from './UniversityData.js';
+import { groupLessons, isRemoteLesson } from './LessonGroups.js';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -22,8 +23,9 @@ export default class CampusMapWidget extends UIComponent {
   render() {
     const { article, body } = this.createShell('assets/icons/map.svg', 'mint', this.subtitle());
     body.classList.add('map-widget-body');
-    body.innerHTML = '<div class="api-state map-content is-loading" role="status">Строим карту занятий…</div>';
+    body.innerHTML = '<div class="map-online-summary" role="status"><strong>Дистанционные занятия</strong><span>Загрузка…</span></div><div class="api-state map-content is-loading" role="status">Строим карту занятий…</div>';
     this.content = body.querySelector('.map-content');
+    this.onlineSummary = body.querySelector('.map-online-summary span');
     this.controls = new DayControls(this, body, ['my', 'all'], this.controlState, (kind) => kind === 'data' ? this.load() : this.showPlaces());
     if (!this.hidden) this.load(); return article;
   }
@@ -33,6 +35,7 @@ export default class CampusMapWidget extends UIComponent {
     const signal = this.abortController.signal;
     const { scope, date } = this.controls.state;
     this.clearMap();
+    this.onlineSummary.textContent = 'Загрузка…';
     this.content.className = 'api-state map-content is-loading'; this.content.textContent = 'Строим карту занятий…';
     try {
       if (scope === 'my') {
@@ -47,7 +50,7 @@ export default class CampusMapWidget extends UIComponent {
       }
       if (!signal.aborted) this.showPlaces();
     } catch (error) {
-      if (!signal.aborted) { this.content.className = 'api-state map-content is-error'; this.content.textContent = 'Не удалось построить карту.'; }
+      if (!signal.aborted) { this.onlineSummary.textContent = 'Нет данных'; this.content.className = 'api-state map-content is-error'; this.content.textContent = 'Не удалось построить карту.'; }
     }
   }
 
@@ -59,13 +62,15 @@ export default class CampusMapWidget extends UIComponent {
     const version = this.renderVersion;
     const { date, period, from, to } = this.controls.state;
     const lessons = filterByTime(this.lessons, date, period, from, to);
+    const remote = groupLessons(lessons.filter(isRemoteLesson));
+    this.onlineSummary.textContent = `${remote.length} ${this.pluralize(remote.length, ['пара', 'пары', 'пар'])}`;
     const places = [...lessons.reduce((map, lesson) => {
-      const key = lesson.building && lesson.building !== '–' && !/дистанц|онлайн/i.test(lesson.building) ? lesson.building : null;
+      const key = lesson.building && lesson.building !== '–' && !isRemoteLesson(lesson) ? lesson.building : null;
       if (!key) return map;
       const current = map.get(key) || { address: key, count: 0, link: lesson.building_link };
       current.count += 1; map.set(key, current); return map;
     }, new Map()).values()];
-    if (!places.length) { this.content.className = 'api-state map-content is-empty'; this.content.textContent = 'На выбранное время занятий нет.'; return; }
+    if (!places.length) { this.content.className = 'api-state map-content is-empty'; this.content.textContent = remote.length ? 'Очных занятий на выбранное время нет.' : 'На выбранное время занятий нет.'; return; }
     this.content.className = 'api-state map-content is-loading'; this.content.textContent = 'Определяем адреса…';
     try {
       for (const place of places) place.coordinates = await this.getCoordinates(place.address);

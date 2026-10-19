@@ -2,6 +2,7 @@ import UIComponent from './UIComponent.js';
 import DayControls from './DayControls.js';
 import { getLessonsForDate, getScheduleForSelectionWeek, getWeekStart } from './SutdApi.js';
 import { filterByScope, filterByTime, getUniversitySnapshot, lessonsForDate } from './UniversityData.js';
+import { groupLessons } from './LessonGroups.js';
 
 export default class TodayScheduleWidget extends UIComponent {
   constructor(config) {
@@ -53,14 +54,15 @@ export default class TodayScheduleWidget extends UIComponent {
     this.content.className = 'today-content'; this.content.replaceChildren();
     if (!lessons.length) { this.content.classList.add('api-state', 'is-empty'); this.content.textContent = this.query || target ? 'По вашему запросу ничего не найдено.' : 'На выбранное время занятий нет.'; return; }
     const list = document.createElement('div'); list.className = 'today-list';
-    lessons.forEach((lesson) => {
+    groupLessons(lessons).forEach((lesson) => {
       const item = document.createElement('article'); item.className = 'today-lesson';
       const time = document.createElement('div'); time.className = 'today-time'; time.innerHTML = '<strong></strong><span></span>'; time.querySelector('strong').textContent = lesson.start_time; time.querySelector('span').textContent = lesson.end_time || '';
       const info = document.createElement('div'); info.className = 'today-info';
       const title = document.createElement('strong'); title.textContent = lesson.subject;
-      const details = document.createElement('p'); details.textContent = [lesson.lesson_type, lesson.teacher !== '–' ? lesson.teacher : '', lesson.group].filter(Boolean).join(' · ');
+      const details = document.createElement('p'); details.textContent = [lesson.lesson_type, lesson.teachers.length && `Преподаватели: ${lesson.teachers.join(', ')}`].filter(Boolean).join(' · ');
+      const groups = document.createElement('p'); groups.textContent = lesson.groups.length ? `Группы: ${lesson.groups.join(', ')}` : '';
       const room = document.createElement('span'); room.textContent = [lesson.classroom, lesson.building].filter(Boolean).join(' · ');
-      info.append(title, details, room); item.append(time, info); list.append(item);
+      info.append(title, details, groups, room); item.append(time, info); list.append(item);
     });
     this.content.append(list);
   }

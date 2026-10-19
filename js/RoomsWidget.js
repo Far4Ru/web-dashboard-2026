@@ -2,9 +2,10 @@ import UIComponent from './UIComponent.js';
 import DayControls from './DayControls.js';
 import { getLessonsForDate, getScheduleForSelectionWeek, getWeekStart } from './SutdApi.js';
 import { filterByScope, filterByTime, getUniversitySnapshot, lessonsForDate } from './UniversityData.js';
+import { groupLessons, isRemoteLesson } from './LessonGroups.js';
 
 const roomKey = (lesson) => `${lesson.building || ''}|${lesson.classroom || ''}`;
-const isPhysicalRoom = (lesson) => lesson.classroom && lesson.building && !/дот|дистанц|онлайн/i.test(`${lesson.classroom} ${lesson.building}`);
+const isPhysicalRoom = (lesson) => lesson.classroom && lesson.building && !isRemoteLesson(lesson);
 
 export default class RoomsWidget extends UIComponent {
   constructor(config) {
@@ -93,15 +94,24 @@ export default class RoomsWidget extends UIComponent {
     summary.textContent = `Найдено аудиторий: ${rooms.length}. Свободные — среди помещений, встречающихся в расписании семестра.`;
     const list = document.createElement('div'); list.className = 'rooms-list';
     rooms.slice(0, 200).forEach(([key, room]) => {
-      const lessons = busy.get(key) || [];
-      const groups = new Set(lessons.map((lesson) => lesson.groupId || lesson.group).filter(Boolean));
-      const teachers = new Set(lessons.flatMap((lesson) => lesson.teachers?.length ? lesson.teachers.map((teacher) => teacher.id) : lesson.teacher && lesson.teacher !== '–' ? [lesson.teacher] : []));
+      const lessons = groupLessons(busy.get(key) || []);
+      const groups = new Set(lessons.flatMap((lesson) => lesson.groups));
+      const teachers = new Set(lessons.flatMap((lesson) => lesson.teachers));
       const item = document.createElement('article');
+      const header = document.createElement('div'); header.className = 'room-header';
       const title = document.createElement('strong'); title.textContent = room.classroom;
       const status = document.createElement('span'); status.textContent = lessons.length ? `${lessons.length} пар` : 'Свободна';
-      const details = document.createElement('p'); details.textContent = lessons.length ? lessons.map((lesson) => `${lesson.start_time} ${lesson.subject}`).slice(0, 2).join(' · ') : 'На выбранное время занятий нет';
+      header.append(title, status);
       const address = document.createElement('small'); address.textContent = `${room.building} · ${groups.size} групп · ${teachers.size} преподавателей`;
-      item.append(title, status, details, address); list.append(item);
+      const details = document.createElement('div'); details.className = 'room-lessons';
+      if (!lessons.length) { details.textContent = 'На выбранное время занятий нет'; }
+      lessons.forEach((lesson) => {
+        const row = document.createElement('div'); row.className = 'room-lesson';
+        const heading = document.createElement('strong'); heading.textContent = `${lesson.start_time}${lesson.end_time ? `–${lesson.end_time}` : ''} · ${lesson.subject}`;
+        const meta = document.createElement('small'); meta.textContent = [lesson.lesson_type, lesson.teachers.length && `Преподаватели: ${lesson.teachers.join(', ')}`, lesson.groups.length && `Группы: ${lesson.groups.join(', ')}`].filter(Boolean).join(' · ');
+        row.append(heading, meta); details.append(row);
+      });
+      item.append(header, address, details); list.append(item);
     });
     this.content.append(summary, list);
     if (rooms.length > 200) { const more = document.createElement('small'); more.textContent = 'Показаны первые 200. Уточните поиск, чтобы увидеть остальные.'; this.content.append(more); }
