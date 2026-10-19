@@ -71,8 +71,9 @@ export default class RoomsWidget extends UIComponent {
     const search = this.query;
     const allTimed = filterByTime(this.lessons, date, period, from, to).filter(isPhysicalRoom);
     const visibleLessons = scope === 'my' && !this.snapshot ? allTimed : filterByScope(allTimed, scope, target, this.selection);
+    const occupied = new Set(allTimed.map(roomKey));
     const busy = new Map();
-    (this.snapshot ? allTimed : visibleLessons).forEach((lesson) => {
+    visibleLessons.forEach((lesson) => {
       const key = roomKey(lesson);
       if (!busy.has(key)) busy.set(key, []);
       busy.get(key).push(lesson);
@@ -86,7 +87,7 @@ export default class RoomsWidget extends UIComponent {
       (scope !== 'address' || !target || room.building.toLocaleLowerCase('ru').includes(target.toLocaleLowerCase('ru'))) &&
       `${room.classroom} ${room.building}`.toLocaleLowerCase('ru').includes(search));
     if (this.occupancy === 'busy') rooms = rooms.filter(([key]) => busy.has(key));
-    if (this.occupancy === 'free') rooms = rooms.filter(([key]) => !busy.has(key));
+    if (this.occupancy === 'free') rooms = rooms.filter(([key]) => !occupied.has(key));
     rooms.sort((a, b) => `${a[1].building} ${a[1].classroom}`.localeCompare(`${b[1].building} ${b[1].classroom}`, 'ru'));
     this.content.className = 'rooms-content'; this.content.replaceChildren();
     if (!rooms.length) { this.content.classList.add('api-state', 'is-empty'); this.content.textContent = 'Аудитории не найдены.'; return; }
@@ -100,11 +101,11 @@ export default class RoomsWidget extends UIComponent {
       const item = document.createElement('article');
       const header = document.createElement('div'); header.className = 'room-header';
       const title = document.createElement('strong'); title.textContent = room.classroom;
-      const status = document.createElement('span'); status.textContent = lessons.length ? `${lessons.length} пар` : 'Свободна';
+      const status = document.createElement('span'); status.textContent = lessons.length ? `${lessons.length} пар` : occupied.has(key) ? 'Занята' : 'Свободна';
       header.append(title, status);
       const address = document.createElement('small'); address.textContent = `${room.building} · ${groups.size} групп · ${teachers.size} преподавателей`;
       const details = document.createElement('div'); details.className = 'room-lessons';
-      if (!lessons.length) { details.textContent = 'На выбранное время занятий нет'; }
+      if (!lessons.length) { details.textContent = occupied.has(key) && scope === 'my' ? 'Моих занятий на выбранное время нет' : 'На выбранное время занятий нет'; }
       lessons.forEach((lesson) => {
         const row = document.createElement('div'); row.className = 'room-lesson';
         const heading = document.createElement('strong'); heading.textContent = `${lesson.start_time}${lesson.end_time ? `–${lesson.end_time}` : ''} · ${lesson.subject}`;
